@@ -5,39 +5,31 @@ Description: >
 
   Sample SAM Template for kiwibuild-notify
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 15
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  KiwiBuildNotifyFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello-world/
-      Handler: hello-world
+      CodeUri: kiwibuild-notify/
+      Handler: kiwibuild-notify
       Runtime: go1.x
-      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
+      Tracing: Active
       Events:
         CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Schedule
           Properties:
-            Path: /hello
-            Method: GET
-      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
-        Variables:
-          PARAM1: VALUE
+            Schedule: cron(0 20 * * ? *)
+            Name: daily-kiwibuild-check
+            Description: Kicks off the check for new kiwibuild properties each day
+            Enabled: True
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldAPI:
-    Description: "API Gateway endpoint URL for Prod environment for First Function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
+  KiwiBuildNotifyFunction:
     Description: "First Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+    Value: !GetAtt KiwiBuildNotifyFunction.Arn
+  KiwiBuildNotifyFunctionIamRole:
+    Description: "Implicit IAM Role created for KiwiBuildNotify function"
+    Value: !GetAtt KiwiBuildNotifyFunctionRole.Arn

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/gocolly/colly/v2"
 )
@@ -51,11 +51,11 @@ func toSingleSpaces(s string) string {
 	return space.ReplaceAllString(s, " ")
 }
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handler(ctx *context.Context) error {
 
 	c := colly.NewCollector()
 
-	// On every a element which has href attribute call callback
+	// On every property card call callback
 	c.OnHTML(`div.properties__card`, func(e *colly.HTMLElement) {
 		prop := NewFromPropertiesCard(e)
 		// Print text
@@ -70,10 +70,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	// Start scraping on kiwibuild.govt.nz
 	c.Visit("https://kiwibuild.govt.nz/available-homes/")
 
-	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("Hi"),
-		StatusCode: 200,
-	}, nil
+	return nil
 }
 
 func main() {

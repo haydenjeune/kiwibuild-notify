@@ -3,6 +3,6 @@ require (
 	github.com/gocolly/colly/v2 v2.1.0
 )
 
-module hello-world
+module kiwibuild-notify
 
 go 1.14
