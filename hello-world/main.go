@@ -1,47 +1,77 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"reflect"
+	"regexp"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/gocolly/colly/v2"
 )
 
-var (
-	// DefaultHTTPGetAddress Default Address
-	DefaultHTTPGetAddress = "https://checkip.amazonaws.com"
+// Property represents a single kiwibuild property tile
+type Property struct {
+	Title    string
+	Location string
+	Price    string
+	Type     string
+	Bed      string
+	Bath     string
+	Car      string
+}
 
-	// ErrNoIP No IP found in response
-	ErrNoIP = errors.New("No IP in HTTP response")
+// NewFromPropertiesCard creates a new Property given a colly element representing the root
+// of it's tile on the KiwiBuild website
+func NewFromPropertiesCard(e *colly.HTMLElement) *Property {
+	var prop Property
+	iterOverStruct(&prop, func(f reflect.StructField, v reflect.Value) {
+		selector := "div.card__content .card__" + strings.ToLower(f.Name)
+		value := toSingleSpaces(e.ChildText(selector))
+		v.SetString(value)
+	})
+	return &prop
+}
 
-	// ErrNon200Response non 200 status code in response
-	ErrNon200Response = errors.New("Non 200 Response found")
-)
+// iterOverStruct iterates over each field in a given struct, executing a callback for each
+// field. The callback is passed the relevant reflect.StructField and reflect.Value
+func iterOverStruct(i interface{}, f func(field reflect.StructField, value reflect.Value)) {
+	// TODO: validate structure of interface
+	v := reflect.ValueOf(i).Elem()
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		f(t.Field(i), v.Field(i))
+	}
+}
+
+// toSingleSpaces removes replaces all continuous whitespace with a single space
+func toSingleSpaces(s string) string {
+	space := regexp.MustCompile(`\s+`)
+	return space.ReplaceAllString(s, " ")
+}
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp, err := http.Get(DefaultHTTPGetAddress)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
 
-	if resp.StatusCode != 200 {
-		return events.APIGatewayProxyResponse{}, ErrNon200Response
-	}
+	c := colly.NewCollector()
 
-	ip, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+	// On every a element which has href attribute call callback
+	c.OnHTML(`div.properties__card`, func(e *colly.HTMLElement) {
+		prop := NewFromPropertiesCard(e)
+		// Print text
+		fmt.Printf("Found Property: %v\n", prop)
+	})
 
-	if len(ip) == 0 {
-		return events.APIGatewayProxyResponse{}, ErrNoIP
-	}
+	// Before making a request print "Visiting ..."
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", r.URL.String())
+	})
+
+	// Start scraping on kiwibuild.govt.nz
+	c.Visit("https://kiwibuild.govt.nz/available-homes/")
 
 	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("Hello, %v", string(ip)),
+		Body:       fmt.Sprintf("Hi"),
 		StatusCode: 200,
 	}, nil
 }

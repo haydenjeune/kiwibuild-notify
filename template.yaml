@@ -1,14 +1,14 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   kiwibuild-notify
-  
+
   Sample SAM Template for kiwibuild-notify
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 5
+    Timeout: 15
 
 Resources:
   HelloWorldFunction:
