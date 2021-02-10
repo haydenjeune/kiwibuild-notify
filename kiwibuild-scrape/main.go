@@ -20,7 +20,8 @@ func init() {
 
 	cfg := aws.NewConfig()
 
-	if endpoint := os.Getenv("DYNAMODB_ENDPOINT"); endpoint != "" {
+	if os.Getenv("AWS_SAM_LOCAL") == "true" {
+		endpoint := os.Getenv("DYNAMODB_TEST_ENDPOINT")
 		log.Println("Using local endpoint: " + endpoint)
 		cfg.WithEndpoint(endpoint)
 	}

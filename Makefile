@@ -5,8 +5,7 @@ build:
 
 run-local: dynamo-local build
 	sam local invoke \
-		--docker-network lambda-local \
-		--env-vars local.json
+		--docker-network lambda-local
 
 dynamo-local: dynamo-local-rm network-local
 	docker run -d -p 8000:8000 --network lambda-local --name dynamodb amazon/dynamodb-local

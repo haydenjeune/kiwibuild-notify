@@ -10,11 +10,11 @@ Globals:
     Timeout: 15
 
 Resources:
-  KiwiBuildNotifyFunction:
+  KiwiBuildScrapeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: kiwibuild-notify/
-      Handler: kiwibuild-notify
+      CodeUri: kiwibuild-scrape/
+      Handler: kiwibuild-scrape
       Runtime: go1.x
       Tracing: Active
       Events:
@@ -28,7 +28,11 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE_NAME: Property
-          DYNAMODB_ENDPOINT: # overridden for local development
+          DYNAMODB_TEST_ENDPOINT: "http://dynamodb:8000"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Property
+
   KiwiBuildPropertyTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -46,9 +50,9 @@ Resources:
       BillingMode: PAY_PER_REQUEST
 
 Outputs:
-  KiwiBuildNotifyFunction:
+  KiwiBuildScrapeFunction:
     Description: "First Lambda Function ARN"
     Value: !GetAtt KiwiBuildNotifyFunction.Arn
-  KiwiBuildNotifyFunctionIamRole:
+  KiwiBuildScrapeFunctionIamRole:
     Description: "Implicit IAM Role created for KiwiBuildNotify function"
     Value: !GetAtt KiwiBuildNotifyFunctionRole.Arn

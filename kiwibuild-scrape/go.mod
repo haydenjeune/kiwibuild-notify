@@ -4,6 +4,6 @@ require (
 	github.com/gocolly/colly/v2 v2.1.0
 )
 
-module kiwibuild-notify
+module kiwibuild-scrape
 
 go 1.14
