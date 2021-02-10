@@ -1,15 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"os"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-// Storer is used to store properties and checks whether they previously existed or not
+// Storer is used to store properties and check whether the record is new
 type Storer interface {
 	Store(p *Property) (bool, error)
 }
@@ -20,26 +19,29 @@ type DynamoDBStorer struct {
 	tableName *string
 }
 
-// Store saves a property to DynamoDB and returns whether it previously existed
+// Store saves a property to DynamoDB and returns whether the record is new
 func (s *DynamoDBStorer) Store(p *Property) (bool, error) {
 	av, err := dynamodbattribute.MarshalMap(p)
 	if err != nil {
-		fmt.Println("Got error marshalling new item:")
-		fmt.Println(err.Error())
-		os.Exit(1)
+		log.Fatalf("error marshalling new item: %v", err)
 	}
 
 	input := &dynamodb.PutItemInput{
-		Item:      av,
-		TableName: s.tableName,
+		Item:         av,
+		TableName:    s.tableName,
+		ReturnValues: aws.String("ALL_OLD"),
 	}
 
-	_, err = s.svc.PutItem(input)
+	resp, err := s.svc.PutItem(input)
 	if err != nil {
-		log.Fatalf("Got error calling PutItem: &v", err)
+		log.Fatalf("error calling PutItem: %v", err)
 	}
 
-	fmt.Printf("Successfully added %v\n", p)
+	// If the old item had no attributes then the item is new
+	new := len(resp.Attributes) == 0
+	if new {
+		log.Printf("New Property: %v (%v)\n", p.Title, p.Location)
+	}
 
-	return false, nil
+	return new, nil
 }

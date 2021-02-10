@@ -11,7 +11,6 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-// TODO: make a struct to inject into to avoid magical access across files
 var svc *dynamodb.DynamoDB
 
 func init() {
