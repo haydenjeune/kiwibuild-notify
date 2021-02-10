@@ -1,13 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gocolly/colly/v2"
 )
 
@@ -51,7 +55,50 @@ func toSingleSpaces(s string) string {
 	return space.ReplaceAllString(s, " ")
 }
 
-func handler(ctx *context.Context) error {
+func persist(p *Property) {
+	// Initialize a session that the SDK will use to load
+	// credentials from the shared credentials file ~/.aws/credentials
+	// and region from the shared configuration file ~/.aws/config.
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	cfg := aws.NewConfig()
+
+	if endpoint := os.Getenv("LOCAL_DYNAMODB_ENDPOINT"); endpoint != "" {
+		fmt.Println("Using local endpoint: " + endpoint)
+		cfg.WithEndpoint(endpoint)
+	}
+
+	// Create DynamoDB client
+	svc := dynamodb.New(sess, cfg)
+
+	av, err := dynamodbattribute.MarshalMap(p)
+	if err != nil {
+		fmt.Println("Got error marshalling new item:")
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	// Create item in table Property
+	tableName := "Property"
+
+	input := &dynamodb.PutItemInput{
+		Item:      av,
+		TableName: aws.String(tableName),
+	}
+
+	_, err = svc.PutItem(input)
+	if err != nil {
+		fmt.Println("Got error calling PutItem:")
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Printf("Successfully added %v\n", p)
+}
+
+func handler() error {
 
 	c := colly.NewCollector()
 
@@ -60,6 +107,7 @@ func handler(ctx *context.Context) error {
 		prop := NewFromPropertiesCard(e)
 		// Print text
 		fmt.Printf("Found Property: %v\n", prop)
+		persist(prop)
 	})
 
 	// Before making a request print "Visiting ..."

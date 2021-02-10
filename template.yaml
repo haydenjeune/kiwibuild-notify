@@ -25,6 +25,10 @@ Resources:
             Name: daily-kiwibuild-check
             Description: Kicks off the check for new kiwibuild properties each day
             Enabled: True
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: Property
+          LOCAL_DYNAMODB_ENDPOINT: "" # overridden for local dev
   KiwiBuildPropertyTable:
     Type: AWS::DynamoDB::Table
     Properties:
