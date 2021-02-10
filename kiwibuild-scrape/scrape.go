@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"regexp"
@@ -34,10 +35,13 @@ func newFromPropertiesCard(e *colly.HTMLElement) *Property {
 }
 
 // ProcessPropertyCard coordinates the parsing, storing, and possible notification associated with each property card
-func ProcessPropertyCard(e *colly.HTMLElement, s Storer) {
+func ProcessPropertyCard(e *colly.HTMLElement, s Storer, n Notifier) {
 	prop := newFromPropertiesCard(e)
 	log.Printf("Found Property: %v (%v)\n", prop.Title, prop.Location)
-	s.Store(prop)
+	new, _ := s.Store(prop)
+	if new {
+		n.Notify(fmt.Sprintf("A new KiwiBuild property '%v' in %v has been listed! %v priced %v", prop.Title, prop.Location, prop.Type, prop.Price))
+	}
 }
 
 // iterOverStruct iterates over each field in a given struct, executing a callback for each

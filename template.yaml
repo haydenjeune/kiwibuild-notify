@@ -22,16 +22,19 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 20 * * ? *)
-            Name: daily-kiwibuild-check
+            Name: daily-kiwibuild-event
             Description: Kicks off the check for new kiwibuild properties each day
             Enabled: True
       Environment:
         Variables:
-          DYNAMODB_TABLE_NAME: Property
+          DYNAMODB_TABLE_NAME: !Ref KiwiBuildPropertyTable
           DYNAMODB_TEST_ENDPOINT: "http://dynamodb:8000"
+          SNS_NOTIFICATION_TOPIC: !Ref KiwiBuildNewPropertyNotificationTopic
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: Property
+            TableName: !Ref KiwiBuildPropertyTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt KiwiBuildNewPropertyNotificationTopic.TopicName
 
   KiwiBuildPropertyTable:
     Type: AWS::DynamoDB::Table
@@ -49,10 +52,18 @@ Resources:
           AttributeType: S
       BillingMode: PAY_PER_REQUEST
 
+  KiwiBuildNewPropertyNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: KiwiBuild Notifications
+      Subscription:
+        - Protocol: email
+          Endpoint: hejeune@gmail.com
+
 Outputs:
   KiwiBuildScrapeFunction:
     Description: "First Lambda Function ARN"
-    Value: !GetAtt KiwiBuildNotifyFunction.Arn
+    Value: !GetAtt KiwiBuildScrapeFunction.Arn
   KiwiBuildScrapeFunctionIamRole:
     Description: "Implicit IAM Role created for KiwiBuildNotify function"
-    Value: !GetAtt KiwiBuildNotifyFunctionRole.Arn
+    Value: !GetAtt KiwiBuildScrapeFunctionRole.Arn
