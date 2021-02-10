@@ -65,7 +65,7 @@ func persist(p *Property) {
 
 	cfg := aws.NewConfig()
 
-	if endpoint := os.Getenv("LOCAL_DYNAMODB_ENDPOINT"); endpoint != "" {
+	if endpoint := os.Getenv("DYNAMODB_ENDPOINT"); endpoint != "" {
 		fmt.Println("Using local endpoint: " + endpoint)
 		cfg.WithEndpoint(endpoint)
 	}
@@ -81,7 +81,7 @@ func persist(p *Property) {
 	}
 
 	// Create item in table Property
-	tableName := "Property"
+	tableName := os.Getenv("DYNAMODB_TABLE_NAME")
 
 	input := &dynamodb.PutItemInput{
 		Item:      av,

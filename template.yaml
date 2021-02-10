@@ -28,7 +28,7 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE_NAME: Property
-          LOCAL_DYNAMODB_ENDPOINT: "" # overridden for local dev
+          DYNAMODB_ENDPOINT: # overridden for local development
   KiwiBuildPropertyTable:
     Type: AWS::DynamoDB::Table
     Properties:
