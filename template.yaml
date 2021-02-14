@@ -51,14 +51,20 @@ Resources:
       Environment:
         Variables:
           SNS_NOTIFICATION_TOPIC: !Ref KiwiBuildNewPropertyNotificationTopic
-    Policies:
-      - DynamoDBStreamReadPoliy:
-          TableName:
-            !Select [1, !Split ["/", !GetAtt KiwiBuildPropertyTable.StreamArn]]
-          StreamName:
-            !Select [3, !Split ["/", !GetAtt KiwiBuildPropertyTable.StreamArn]]
-      - SNSPublishMessagePolicy:
-          TopicName: !GetAtt KiwiBuildNewPropertyNotificationTopic.TopicName
+      Policies:
+        - DynamoDBStreamReadPolicy:
+            TableName:
+              !Select [
+                1,
+                !Split ["/", !GetAtt KiwiBuildPropertyTable.StreamArn],
+              ]
+            StreamName:
+              !Select [
+                3,
+                !Split ["/", !GetAtt KiwiBuildPropertyTable.StreamArn],
+              ]
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt KiwiBuildNewPropertyNotificationTopic.TopicName
 
   KiwiBuildPropertyTable:
     Type: AWS::DynamoDB::Table
