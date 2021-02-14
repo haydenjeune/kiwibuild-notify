@@ -35,11 +35,10 @@ func init() {
 func handler() {
 	// TODO: init these in exec context and inject into handler?
 	s := &DynamoDBStorer{svc: dynamoClient, tableName: aws.String(os.Getenv("DYNAMODB_TABLE_NAME"))}
-	n := &SNSNotifier{svc: snsClient, topic: sns.Topic{TopicArn: aws.String(os.Getenv("SNS_NOTIFICATION_TOPIC"))}}
 
 	c := colly.NewCollector()
 	c.OnHTML(`div.properties__card`, func(e *colly.HTMLElement) {
-		ProcessPropertyCard(e, s, n)
+		ProcessPropertyCard(e, s)
 	})
 	c.Visit("https://kiwibuild.govt.nz/available-homes/")
 }

@@ -29,12 +29,36 @@ Resources:
         Variables:
           DYNAMODB_TABLE_NAME: !Ref KiwiBuildPropertyTable
           DYNAMODB_TEST_ENDPOINT: "http://dynamodb:8000"
-          SNS_NOTIFICATION_TOPIC: !Ref KiwiBuildNewPropertyNotificationTopic
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref KiwiBuildPropertyTable
-        - SNSPublishMessagePolicy:
-            TopicName: !GetAtt KiwiBuildNewPropertyNotificationTopic.TopicName
+
+  KiwiBuildNotifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: kiwibuild-notify/
+      Handler: kiwibuild-notify
+      Runtime: go1.x
+      Tracing: Active
+      Events:
+        NewTableRecordsEvent:
+          Type: DynamoDB
+          Properties:
+            BatchSize: 100
+            MaximumBatchingWindowInSeconds: 10
+            StartingPosition: LATEST
+            Stream: !GetAtt KiwiBuildPropertyTable.StreamArn
+      Environment:
+        Variables:
+          SNS_NOTIFICATION_TOPIC: !Ref KiwiBuildNewPropertyNotificationTopic
+    Policies:
+      - DynamoDBStreamReadPoliy:
+          TableName:
+            !Select [1, !Split ["/", !GetAtt KiwiBuildPropertyTable.StreamArn]]
+          StreamName:
+            !Select [3, !Split ["/", !GetAtt KiwiBuildPropertyTable.StreamArn]]
+      - SNSPublishMessagePolicy:
+          TopicName: !GetAtt KiwiBuildNewPropertyNotificationTopic.TopicName
 
   KiwiBuildPropertyTable:
     Type: AWS::DynamoDB::Table
@@ -51,6 +75,8 @@ Resources:
         - AttributeName: Type
           AttributeType: S
       BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
 
   KiwiBuildNewPropertyNotificationTopic:
     Type: AWS::SNS::Topic

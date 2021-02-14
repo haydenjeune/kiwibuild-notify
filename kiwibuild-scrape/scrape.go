@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 	"regexp"
@@ -26,6 +25,7 @@ type Property struct {
 // of it's tile on the KiwiBuild website
 func newFromPropertiesCard(e *colly.HTMLElement) *Property {
 	var prop Property
+	// iterare over fields in Property, extracting the values from the HTML element
 	iterOverStruct(&prop, func(f reflect.StructField, v reflect.Value) {
 		selector := "div.card__content .card__" + strings.ToLower(f.Name)
 		value := toSingleSpaces(e.ChildText(selector))
@@ -34,14 +34,11 @@ func newFromPropertiesCard(e *colly.HTMLElement) *Property {
 	return &prop
 }
 
-// ProcessPropertyCard coordinates the parsing, storing, and possible notification associated with each property card
-func ProcessPropertyCard(e *colly.HTMLElement, s Storer, n Notifier) {
+// ProcessPropertyCard coordinates the parsing and storing of properties on the KiwiBuild site
+func ProcessPropertyCard(e *colly.HTMLElement, s Storer) {
 	prop := newFromPropertiesCard(e)
 	log.Printf("Found Property: %v (%v)\n", prop.Title, prop.Location)
-	new, _ := s.Store(prop)
-	if new {
-		n.Notify(fmt.Sprintf("A new KiwiBuild property '%v' in %v has been listed! %v priced %v", prop.Title, prop.Location, prop.Type, prop.Price))
-	}
+	s.Store(prop)
 }
 
 // iterOverStruct iterates over each field in a given struct, executing a callback for each
