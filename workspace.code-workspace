@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "kiwibuild-notify"
+		},
+		{
+			"path": "kiwibuild-scrape"
+		}
+	],
+	"settings": {}
+}

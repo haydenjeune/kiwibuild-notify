@@ -9,6 +9,10 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
+type Scraper interface {
+	Scrape() ([]Property, error)
+}
+
 // Property represents a single kiwibuild property tile
 // fields must be named to match relevant html class, eg Title -> .card__title
 type Property struct {
