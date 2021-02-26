@@ -91,6 +91,8 @@ Resources:
       Subscription:
         - Protocol: email
           Endpoint: hejeune@gmail.com
+        - Protocol: email
+          Endpoint: ellagriffinking@gmail.com
 
 Outputs:
   KiwiBuildScrapeFunction:

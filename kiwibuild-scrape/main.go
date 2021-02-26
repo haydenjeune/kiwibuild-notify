@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/gocolly/colly/v2"
 )
 
 var dynamoClient *dynamodb.DynamoDB
@@ -34,13 +34,13 @@ func init() {
 
 func handler() {
 	// TODO: init these in exec context and inject into handler?
-	s := &DynamoDBStorer{svc: dynamoClient, tableName: aws.String(os.Getenv("DYNAMODB_TABLE_NAME"))}
+	//s := &DynamoDBStorer{svc: dynamoClient, tableName: aws.String(os.Getenv("DYNAMODB_TABLE_NAME"))}
 
-	c := colly.NewCollector()
-	c.OnHTML(`div.properties__card`, func(e *colly.HTMLElement) {
-		ProcessPropertyCard(e, s)
-	})
-	c.Visit("https://kiwibuild.govt.nz/available-homes/")
+	s := &CollyKiwiBuildWebScraper{url: "https://kiwibuild.govt.nz/available-homes/"}
+	p, _ := s.Scrape()
+	for _, v := range p {
+		fmt.Println(*v)
+	}
 }
 
 func main() {

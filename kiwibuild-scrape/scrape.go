@@ -1,17 +1,13 @@
 package main
 
 import (
-	"log"
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/gocolly/colly/v2"
 )
-
-type Scraper interface {
-	Scrape() ([]Property, error)
-}
 
 // Property represents a single kiwibuild property tile
 // fields must be named to match relevant html class, eg Title -> .card__title
@@ -38,11 +34,32 @@ func newFromPropertiesCard(e *colly.HTMLElement) *Property {
 	return &prop
 }
 
-// ProcessPropertyCard coordinates the parsing and storing of properties on the KiwiBuild site
-func ProcessPropertyCard(e *colly.HTMLElement, s Storer) {
-	prop := newFromPropertiesCard(e)
-	log.Printf("Found Property: %v (%v)\n", prop.Title, prop.Location)
-	s.Store(prop)
+// Scraper is the interface that scraping code must satisfy
+type Scraper interface {
+	Scrape() ([]*Property, error)
+}
+
+// CollyKiwiBuildWebScraper uses Colly to extract a list of properties from the KiwiBuild website
+type CollyKiwiBuildWebScraper struct {
+	url string
+}
+
+// Scrape gets list of properties
+func (s *CollyKiwiBuildWebScraper) Scrape() ([]*Property, error) {
+	properties := make([]*Property, 0, 64)
+	mu := new(sync.Mutex) // protects properties
+	c := colly.NewCollector()
+
+	c.OnHTML(`div.properties__card`, func(e *colly.HTMLElement) {
+		prop := newFromPropertiesCard(e)
+		mu.Lock()
+		properties = append(properties, prop)
+		mu.Unlock()
+	})
+
+	c.Visit(s.url)
+
+	return properties, nil
 }
 
 // iterOverStruct iterates over each field in a given struct, executing a callback for each
