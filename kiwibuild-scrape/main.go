@@ -26,8 +26,13 @@ func init() {
 		cfg.WithEndpoint(endpoint)
 	}
 
-	scraper = &CollyKiwiBuildWebScraper{url: os.Getenv("KIWIBUILD_URL")}
-	storer = &DynamoDBStorer{svc: dynamodb.New(sess, cfg), tableName: aws.String(os.Getenv("DYNAMODB_TABLE_NAME"))}
+	scraper = &CollyKiwiBuildWebScraper{
+		url: os.Getenv("KIWIBUILD_URL"),
+	}
+	storer = &DynamoDBStorer{
+		svc:       dynamodb.New(sess, cfg),
+		tableName: aws.String(os.Getenv("DYNAMODB_TABLE_NAME")),
+	}
 }
 
 func handler(scraper Scraper, storer Storer) {
