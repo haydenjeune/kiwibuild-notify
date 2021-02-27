@@ -1,0 +1,5 @@
+{
+    "KiwiBuildScrapeFunction": {
+      "DYNAMODB_TABLE_NAME": "Property"
+    }
+}

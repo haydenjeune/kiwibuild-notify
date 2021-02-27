@@ -1,11 +1,14 @@
-.PHONY: build dynamo-local dynamo-local-rm network-local network-local-rm
+.ONESHELL:
+.PHONY: build dynamo-local dynamo-local-rm network-local network-local-rm run-local-scrape
 
 build:
 	sam build
 
-run-local: dynamo-local build
+run-local-scrape: dynamo-local build
 	sam local invoke \
-		--docker-network lambda-local
+		--docker-network lambda-local \
+		--env-vars local.json \
+		"KiwiBuildScrapeFunction"
 
 dynamo-local: dynamo-local-rm network-local
 	docker run -d -p 8000:8000 --network lambda-local --name dynamodb amazon/dynamodb-local
@@ -23,11 +26,11 @@ dynamo-local: dynamo-local-rm network-local
 		> /dev/null
 
 dynamo-local-rm:
-	-@docker stop dynamodb > /dev/null
-	-@docker rm dynamodb > /dev/null
+	-@docker stop dynamodb &> /dev/null
+	-@docker rm dynamodb &> /dev/null
 
 network-local: network-local-rm
 	docker network create lambda-local
 
 network-local-rm:
-	-@docker network rm lambda-local > /dev/null
+	-@docker network rm lambda-local &> /dev/null
