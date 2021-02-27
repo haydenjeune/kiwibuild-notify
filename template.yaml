@@ -27,8 +27,9 @@ Resources:
             Enabled: True
       Environment:
         Variables:
+          KIWIBUILD_URL: https://kiwibuild.govt.nz/available-homes/
           DYNAMODB_TABLE_NAME: !Ref KiwiBuildPropertyTable
-          DYNAMODB_TEST_ENDPOINT: "http://dynamodb:8000"
+          DYNAMODB_TEST_ENDPOINT: http://dynamodb:8000
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref KiwiBuildPropertyTable

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -9,11 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/sns"
 )
 
-var dynamoClient *dynamodb.DynamoDB
-var snsClient *sns.SNS
+var scraper Scraper
+var storer Storer
 
 func init() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -28,21 +26,24 @@ func init() {
 		cfg.WithEndpoint(endpoint)
 	}
 
-	dynamoClient = dynamodb.New(sess, cfg)
-	snsClient = sns.New(sess)
+	scraper = &CollyKiwiBuildWebScraper{url: os.Getenv("KIWIBUILD_URL")}
+	storer = &DynamoDBStorer{svc: dynamodb.New(sess, cfg), tableName: aws.String(os.Getenv("DYNAMODB_TABLE_NAME"))}
 }
 
-func handler() {
-	// TODO: init these in exec context and inject into handler?
-	//s := &DynamoDBStorer{svc: dynamoClient, tableName: aws.String(os.Getenv("DYNAMODB_TABLE_NAME"))}
+func handler(scraper Scraper, storer Storer) {
+	properties, err := scraper.Scrape()
+	if err != nil {
+		log.Fatalf("failed to scrape properties: %v", err)
+	}
 
-	s := &CollyKiwiBuildWebScraper{url: "https://kiwibuild.govt.nz/available-homes/"}
-	p, _ := s.Scrape()
-	for _, v := range p {
-		fmt.Println(*v)
+	err = storer.Store(properties)
+	if err != nil {
+		log.Fatalf("failed to store properties: %v", err)
 	}
 }
 
 func main() {
-	lambda.Start(handler)
+	lambda.Start(func() {
+		handler(scraper, storer)
+	})
 }

@@ -1,16 +1,17 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/cenkalti/backoff/v4"
 )
 
-// Storer is used to store properties and check whether the record is new
+// Storer is used to store properties in some backend
 type Storer interface {
-	Store(p *Property) (bool, error)
+	Store(p []*Property) error
 }
 
 // DynamoDBStorer implements the Storer interface with a DynamoDB backend
@@ -19,29 +20,51 @@ type DynamoDBStorer struct {
 	tableName *string
 }
 
-// Store saves a property to DynamoDB and returns whether the record is new
-func (s *DynamoDBStorer) Store(p *Property) (bool, error) {
-	av, err := dynamodbattribute.MarshalMap(p)
+// Store saves list of properties to DynamoDB
+func (s *DynamoDBStorer) Store(p []*Property) error {
+	items, err := s.buildRequestItems(p)
 	if err != nil {
-		log.Fatalf("error marshalling new item: %v", err)
+		return fmt.Errorf("failed to build request: %v", err)
 	}
 
-	input := &dynamodb.PutItemInput{
-		Item:         av,
-		TableName:    s.tableName,
-		ReturnValues: aws.String("ALL_OLD"),
-	}
+	retryPolicy := backoff.NewExponentialBackOff()
+	retryPolicy.MaxElapsedTime = 5 * time.Second
 
-	resp, err := s.svc.PutItem(input)
+	err = backoff.Retry(func() error {
+		req := &dynamodb.BatchWriteItemInput{
+			RequestItems: items,
+		}
+		resp, err := s.svc.BatchWriteItem(req)
+		if err != nil {
+			// unrecoverable error
+			return backoff.Permanent(err)
+		}
+		if len(resp.UnprocessedItems) > 0 {
+			// retry unprocessed items
+			items = resp.UnprocessedItems
+			return fmt.Errorf("unprocessed items remaining [%v]", items)
+		}
+		return nil
+	}, retryPolicy)
 	if err != nil {
-		log.Fatalf("error calling PutItem: %v", err)
+		return fmt.Errorf("failed to write items to dynamo: %v", err)
 	}
 
-	// If the old item had no attributes then the item is new
-	new := len(resp.Attributes) == 0
-	if new {
-		log.Printf("New Property: %v (%v)\n", p.Title, p.Location)
-	}
+	return nil
+}
 
-	return new, nil
+// buildRequestItems builds a dynamodb batch write request to put each property to the table
+func (s *DynamoDBStorer) buildRequestItems(p []*Property) (map[string][]*dynamodb.WriteRequest, error) {
+	reqs := make([]*dynamodb.WriteRequest, len(p))
+	for i, val := range p {
+		item, err := dynamodbattribute.MarshalMap(val)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshall property '%s' to attribute value: %v", val.Title, err)
+		}
+		reqs[i] = &dynamodb.WriteRequest{
+			PutRequest: &dynamodb.PutRequest{Item: item},
+		}
+	}
+	var reqItems = map[string][]*dynamodb.WriteRequest{*s.tableName: reqs}
+	return reqItems, nil
 }
