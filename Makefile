@@ -1,4 +1,3 @@
-.ONESHELL:
 .PHONY: build dynamo-local dynamo-local-rm network-local network-local-rm run-local-scrape
 
 build:
