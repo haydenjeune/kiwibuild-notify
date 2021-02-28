@@ -1,9 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  kiwibuild-notify
+Description: Sends notifications via phone and email when new properties are listed on the KiwiBuild website.
 
-  Sample SAM Template for kiwibuild-notify
+Parameters:
+  SNSTopicARN: # manually managed to keep contact details off GitHub
+    Type: String
+    Description: The ARN of the manually manages SNS topic to handle notifications.
 
 Globals:
   Function:
@@ -51,7 +53,7 @@ Resources:
             Stream: !GetAtt KiwiBuildPropertyTable.StreamArn
       Environment:
         Variables:
-          SNS_NOTIFICATION_TOPIC: !Ref KiwiBuildNewPropertyNotificationTopic
+          SNS_NOTIFICATION_TOPIC: !Ref SNSTopicARN
       Policies:
         - DynamoDBStreamReadPolicy:
             TableName:
@@ -65,7 +67,7 @@ Resources:
                 !Split ["/", !GetAtt KiwiBuildPropertyTable.StreamArn],
               ]
         - SNSPublishMessagePolicy:
-            TopicName: !GetAtt KiwiBuildNewPropertyNotificationTopic.TopicName
+            TopicName: !Select [5, !Split [":", !Ref SNSTopicARN]]
 
   KiwiBuildPropertyTable:
     Type: AWS::DynamoDB::Table
@@ -84,16 +86,6 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
-
-  KiwiBuildNewPropertyNotificationTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      DisplayName: KiwiBuild Notifications
-      Subscription:
-        - Protocol: email
-          Endpoint: hejeune@gmail.com
-        - Protocol: email
-          Endpoint: ellagriffinking@gmail.com
 
 Outputs:
   KiwiBuildScrapeFunction:
