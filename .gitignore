@@ -1,3 +1,5 @@
 .aws-sam
 **/vendor/*
 workspace.code-workspace
+.venv
+.vscode

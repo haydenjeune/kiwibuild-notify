@@ -1,4 +1,18 @@
-.PHONY: build dynamo-local dynamo-local-rm network-local network-local-rm run-local-scrape
+.PHONY: build dynamo-local dynamo-local-rm network-local network-local-rm run-local-scrape docs-setup
+
+venv = .venv
+python = $(venv)/bin/python
+pip = $(venv)/bin/pip
+
+$(venv):
+	python3 -m venv $(venv)
+
+docs-setup: $(venv) docs/requirements.txt
+	$(pip) install -r docs/requirements.txt
+
+diagram: docs-setup
+	$(python) docs/architecture.py
+	mv kiwibuild_notifier.png docs/
 
 build:
 	sam build
