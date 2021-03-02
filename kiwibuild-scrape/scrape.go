@@ -24,6 +24,7 @@ type Property struct {
 	Bed      string `selector:".card__bed"`
 	Bath     string `selector:".card__bath"`
 	Car      string `selector:".card__car"`
+	Status   string `selector:".card__status-label"`
 }
 
 // newFromPropertiesCard creates a new Property given a colly element representing the root
