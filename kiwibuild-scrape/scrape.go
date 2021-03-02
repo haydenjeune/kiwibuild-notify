@@ -1,24 +1,29 @@
 package main
 
 import (
+	"encoding/json"
+	"log"
 	"reflect"
 	"regexp"
-	"strings"
 	"sync"
 
 	"github.com/gocolly/colly/v2"
 )
 
-// Property represents a single kiwibuild property tile
-// fields must be named to match relevant html class, eg Title -> .card__title
+const selectorTag string = "selector"
+
+// Property represents a single KiwiBuild property tile
+//
+// Fields must be tagged with a colly selector that can be used to retrieve the value from
+// the root of the tile.
 type Property struct {
-	Title    string
-	Location string
-	Price    string
-	Type     string
-	Bed      string
-	Bath     string
-	Car      string
+	Title    string `selector:".card__title"`
+	Location string `selector:".card__location"`
+	Price    string `selector:".card__price"`
+	Type     string `selector:".card__type"`
+	Bed      string `selector:".card__bed"`
+	Bath     string `selector:".card__bath"`
+	Car      string `selector:".card__car"`
 }
 
 // newFromPropertiesCard creates a new Property given a colly element representing the root
@@ -27,8 +32,7 @@ func newFromPropertiesCard(e *colly.HTMLElement) *Property {
 	var prop Property
 	// iterare over fields in Property, extracting the values from the HTML element
 	iterOverStruct(&prop, func(f reflect.StructField, v reflect.Value) {
-		selector := "div.card__content .card__" + strings.ToLower(f.Name)
-		value := toSingleSpaces(e.ChildText(selector))
+		value := toSingleSpaces(e.ChildText(f.Tag.Get(selectorTag)))
 		v.SetString(value)
 	})
 	return &prop
@@ -55,6 +59,9 @@ func (s *CollyKiwiBuildWebScraper) Scrape() ([]*Property, error) {
 		mu.Lock()
 		properties = append(properties, prop)
 		mu.Unlock()
+
+		propJSON, _ := json.MarshalIndent(prop, "", "  ")
+		log.Printf("Found property: %s\n", propJSON)
 	})
 
 	c.Visit(s.url)
