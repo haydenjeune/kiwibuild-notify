@@ -10,7 +10,8 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-const selectorTag string = "selector"
+const fieldSelectorTagName string = "selector"
+const propertyTileSelector string = "div.properties__card"
 
 // Property represents a single KiwiBuild property tile
 //
@@ -33,7 +34,7 @@ func newFromPropertiesCard(e *colly.HTMLElement) *Property {
 	var prop Property
 	// iterare over fields in Property, extracting the values from the HTML element
 	iterOverStruct(&prop, func(f reflect.StructField, v reflect.Value) {
-		value := toSingleSpaces(e.ChildText(f.Tag.Get(selectorTag)))
+		value := toSingleSpaces(e.ChildText(f.Tag.Get(fieldSelectorTagName)))
 		v.SetString(value)
 	})
 	return &prop
@@ -55,7 +56,7 @@ func (s *CollyKiwiBuildWebScraper) Scrape() ([]*Property, error) {
 	mu := new(sync.Mutex) // protects properties
 	c := colly.NewCollector()
 
-	c.OnHTML(`div.properties__card`, func(e *colly.HTMLElement) {
+	c.OnHTML(propertyTileSelector, func(e *colly.HTMLElement) {
 		prop := newFromPropertiesCard(e)
 		mu.Lock()
 		properties = append(properties, prop)
